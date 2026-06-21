@@ -1,4 +1,4 @@
--- exam_sessions table for mock exam progress
+-- Run once in Supabase SQL editor, or: supabase db query -f supabase/setup.sql --linked
 
 create table if not exists exam_sessions (
   id uuid primary key default gen_random_uuid(),

@@ -1,0 +1,8 @@
+# https://supabase.com/docs/guides/local-development/cli/config
+project_id = "bsqhmgkagwvjesrlegqx"
+
+[api]
+enabled = true
+
+[db]
+major_version = 15

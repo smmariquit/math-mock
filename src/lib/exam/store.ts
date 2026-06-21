@@ -21,7 +21,7 @@ interface ExamState {
   hydrated: boolean;
   saving: boolean;
   lastSavedAt: number | null;
-  initNewExam: (studentName: string, email: string) => Promise<void>;
+  initNewExam: (studentName: string, email: string) => Promise<"started" | "resumed">;
   restoreByEmail: (email: string) => Promise<ExamSession | null>;
   resumeExam: () => Promise<ExamSession | null>;
   setAnswer: (questionId: number, optionIndex: number | null) => void;
@@ -63,11 +63,25 @@ export const useExamStore = create<ExamState>((set, get) => ({
   lastSavedAt: null,
 
   initNewExam: async (studentName, email) => {
+    const existing = await loadActiveSessionByEmail(email);
+    if (existing?.status === "in_progress") {
+      const session =
+        existing.studentName !== studentName
+          ? { ...existing, studentName }
+          : existing;
+      set(hydrateSession(session));
+      if (session !== existing) {
+        await get().persist();
+      }
+      return "resumed";
+    }
+
     const seed = Date.now();
     const remote = await createSession(studentName, email, seed, EXAM_TIME_SECONDS);
     const session = remote ?? buildLocalSession(studentName, email, seed);
     set(hydrateSession(session));
     await get().persist();
+    return "started";
   },
 
   restoreByEmail: async (email) => {
