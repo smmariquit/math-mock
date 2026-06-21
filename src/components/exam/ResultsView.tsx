@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Latex } from "@/components/Latex";
+import { QuestionReviewList } from "@/components/exam/QuestionReviewList";
 import { generateExamQuestions } from "@/lib/questions/generator";
 import { loadLocalBackup, loadSession } from "@/lib/supabase/client";
 import { TOPIC_LABELS, type ExamSession, type Topic } from "@/lib/types";
@@ -27,6 +27,11 @@ export function ResultsView({ sessionId }: ResultsViewProps) {
     void load();
   }, [sessionId]);
 
+  const questions = useMemo(
+    () => (session ? generateExamQuestions(session.seed, EXAM_ITEM_COUNT) : []),
+    [session],
+  );
+
   if (!session) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">
@@ -34,8 +39,6 @@ export function ResultsView({ sessionId }: ResultsViewProps) {
       </div>
     );
   }
-
-  const questions = generateExamQuestions(session.seed, EXAM_ITEM_COUNT);
 
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-10 text-slate-100">
@@ -83,37 +86,9 @@ export function ResultsView({ sessionId }: ResultsViewProps) {
           </section>
         )}
 
-        <section className="mt-6 rounded-lg border border-slate-700 bg-slate-900/60 p-5">
-          <h2 className="mb-3 text-sm font-medium text-slate-300">Review</h2>
-          <div className="max-h-[480px] space-y-3 overflow-y-auto">
-            {questions.map((q) => {
-              const selected = session.answers[q.id];
-              const correct = selected === q.correctIndex;
-              return (
-                <div
-                  key={q.id}
-                  className={`rounded-lg border p-3 ${
-                    correct
-                      ? "border-emerald-800/50"
-                      : selected === null || selected === undefined
-                        ? "border-slate-700"
-                        : "border-red-800/50"
-                  }`}
-                >
-                  <p className="text-xs text-slate-500">{q.id}</p>
-                  <div className="mt-1 text-sm">
-                    <Latex>{q.prompt}</Latex>
-                  </div>
-                  {!correct && (
-                    <p className="mt-2 text-xs text-slate-400">
-                      Answer: <Latex>{q.options[q.correctIndex]}</Latex>
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        <div className="mt-6">
+          <QuestionReviewList questions={questions} session={session} />
+        </div>
       </div>
     </div>
   );
