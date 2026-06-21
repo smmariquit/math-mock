@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PH High School Math Mock Exam
 
-## Getting Started
+A 100-item, 3-hour timed mock exam covering Philippine K-12 high school mathematics (Grades 7–12). No calculus.
 
-First, run the development server:
+## Features
+
+- **100 multiple-choice items** across number sense, algebra, geometry, trigonometry, statistics, and functions/sequences
+- **3-hour countdown timer** with auto-submit when time expires
+- **KaTeX** for beautiful math rendering
+- **SVG & Matter.js visualizations** for geometry, graphs, and physics demos
+- **Auto-save progress** to localStorage on every answer + Supabase cloud backup
+- **Scoring & topic breakdown** with full answer review
+
+## Setup
+
+```bash
+npm install
+cp .env.example .env.local
+# Add your Supabase URL and anon key to .env.local
+```
+
+Run the SQL migration in `supabase/migrations/001_exam_sessions.sql` in your Supabase SQL editor.
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Supabase
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Without Supabase configured, the app still works — progress is saved to localStorage. With Supabase, sessions sync to the cloud so progress survives browser clears (as long as you have the session ID in localStorage, or resume from the same device).
 
-## Learn More
+## Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 16, React 19, TypeScript
+- Tailwind CSS 4
+- KaTeX, Matter.js, Zustand
+- Supabase
