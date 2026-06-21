@@ -21,8 +21,9 @@ export interface Question {
   options: string[];
   correctIndex: number;
   explanation: string;
+  hints: string[];
   visualization: VisualizationType;
-  vizData?: Record<string, number | number[] | string>;
+  vizData?: Record<string, number | number[] | string | boolean | string[]>;
 }
 
 export type AnswersMap = Record<number, number | null>;
@@ -42,6 +43,18 @@ export interface ExamSession {
   score?: number;
   correctCount?: number;
   topicBreakdown?: Record<Topic, { correct: number; total: number }>;
+}
+
+export interface AttemptSummary {
+  id: string;
+  studentName: string;
+  email: string;
+  status: ExamSession["status"];
+  score?: number;
+  correctCount?: number;
+  answeredCount: number;
+  startedAt: string;
+  updatedAt: string;
 }
 
 export const TOPIC_LABELS: Record<Topic, string> = {

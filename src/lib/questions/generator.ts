@@ -9,8 +9,10 @@ import {
   pickInt,
   shuffleWithRng,
 } from "./utils";
+import { attachHints } from "./hints";
 
-type Generator = (rng: () => number, id: number) => Question;
+type QuestionDraft = Omit<Question, "hints">;
+type Generator = (rng: () => number, id: number) => QuestionDraft;
 
 const generators: { topic: Topic; fn: Generator }[] = [
   { topic: "number_sense", fn: genFractionAdd },
@@ -43,7 +45,7 @@ const generators: { topic: Topic; fn: Generator }[] = [
   { topic: "geometry", fn: genProjectileHeight },
 ];
 
-function questionFingerprint(q: Question): string {
+function questionFingerprint(q: QuestionDraft): string {
   return `${q.prompt}::${q.options[q.correctIndex]}`;
 }
 
@@ -59,7 +61,7 @@ export function generateExamQuestions(seed: number, count = 100): Question[] {
   for (let i = 0; i < count; i += 1) {
     const baseGenIndex = shuffledSlots[i]!;
     let attempt = 0;
-    let question: Question | null = null;
+    let question: QuestionDraft | null = null;
 
     while (attempt < 64 && !question) {
       const genIndex = (baseGenIndex + attempt) % generators.length;
@@ -81,13 +83,13 @@ export function generateExamQuestions(seed: number, count = 100): Question[] {
       question = { ...fn(createSeededRandom(qSeed), i + 1), id: i + 1, topic };
     }
 
-    questions.push(question);
+    questions.push(attachHints(question));
   }
 
   return questions;
 }
 
-function genFractionAdd(rng: () => number, id: number): Question {
+function genFractionAdd(rng: () => number, id: number): QuestionDraft {
   const a = pickInt(rng, 1, 9);
   const b = pickInt(rng, 2, 10);
   const c = pickInt(rng, 1, 9);
@@ -111,7 +113,7 @@ function genFractionAdd(rng: () => number, id: number): Question {
   };
 }
 
-function genPercentOf(rng: () => number, id: number): Question {
+function genPercentOf(rng: () => number, id: number): QuestionDraft {
   const pct = pickFrom(rng, [5, 10, 12, 15, 20, 25, 30, 40, 50]);
   const base = pickInt(rng, 20, 400);
   const correct = String((pct / 100) * base);
@@ -131,15 +133,17 @@ function genPercentOf(rng: () => number, id: number): Question {
   };
 }
 
-function genRatioProblem(rng: () => number, id: number): Question {
-  const a = pickInt(rng, 2, 7);
-  const b = pickInt(rng, 2, 7);
+function genRatioProblem(rng: () => number, id: number): QuestionDraft {
+  let a = pickInt(rng, 2, 7);
+  let b = pickInt(rng, 2, 7);
+  if (a === b) b = a + 1 <= 7 ? a + 1 : a - 1;
   const total = pickInt(rng, 3, 12) * (a + b);
   const correct = String(Math.round((total * a) / (a + b)));
+  const girls = String(Math.round((total * b) / (a + b)));
   const { options, correctIndex } = buildOptions(rng, correct, [
-    String(Math.round(total / a)),
-    String(Math.round((total * b) / (a + b))),
-    String(total - Number(correct)),
+    String(Math.round(total / (a + b))),
+    girls,
+    String(Number(correct) + 1),
   ]);
   return {
     id,
@@ -153,7 +157,7 @@ function genRatioProblem(rng: () => number, id: number): Question {
   };
 }
 
-function genDecimalMultiply(rng: () => number, id: number): Question {
+function genDecimalMultiply(rng: () => number, id: number): QuestionDraft {
   const x = pickInt(rng, 2, 9);
   const y = pickInt(rng, 1, 9);
   const dec = x / 10;
@@ -174,7 +178,7 @@ function genDecimalMultiply(rng: () => number, id: number): Question {
   };
 }
 
-function genIntegerOps(rng: () => number, id: number): Question {
+function genIntegerOps(rng: () => number, id: number): QuestionDraft {
   const a = pickInt(rng, 10, 99);
   const b = pickInt(rng, 2, 9);
   const c = pickInt(rng, 2, 9);
@@ -195,10 +199,31 @@ function genIntegerOps(rng: () => number, id: number): Question {
   };
 }
 
-function genLinearEquation(rng: () => number, id: number): Question {
+function formatLinear(b: number): string {
+  if (b === 0) return "";
+  return b >= 0 ? `+ ${b}` : `- ${Math.abs(b)}`;
+}
+
+function formatSignedTerm(value: number, variable = ""): string {
+  if (value === 0) return "";
+  const core = variable ? `${Math.abs(value)}${variable}` : `${Math.abs(value)}`;
+  return value >= 0 ? `+ ${core}` : `- ${core}`;
+}
+
+function formatQuadraticPrompt(b: number, c: number): string {
+  const middle = formatSignedTerm(b, "x").replace(/^\+ /, "");
+  const constant = formatSignedTerm(c);
+  if (middle && constant) return `$x^2 ${middle} ${constant} = 0$`;
+  if (middle) return `$x^2 ${middle} = 0$`;
+  if (constant) return `$x^2 ${constant} = 0$`;
+  return `$x^2 = 0$`;
+}
+
+function genLinearEquation(rng: () => number, id: number): QuestionDraft {
   const m = pickInt(rng, 2, 9);
   const x = pickInt(rng, 1, 12);
-  const b = pickInt(rng, -9, 9);
+  let b = pickInt(rng, -9, 9);
+  if (b === 0) b = pickInt(rng, 1, 9) * (rng() > 0.5 ? 1 : -1);
   const c = m * x + b;
   const correct = String(x);
   const { options, correctIndex } = buildOptions(rng, correct, [
@@ -209,41 +234,41 @@ function genLinearEquation(rng: () => number, id: number): Question {
   return {
     id,
     topic: "algebra",
-    prompt: `Solve for $x$: $${m}x ${b >= 0 ? "+" : "-"} ${Math.abs(b)} = ${c}$`,
+    prompt: `Solve for $x$: $${m}x ${formatLinear(b)} = ${c}$`,
     options,
     correctIndex,
     explanation: `$${m}x = ${c - b}$, so $x = \\dfrac{${c - b}}{${m}} = ${x}$`,
     visualization: "coordinate",
-    vizData: { kind: "linear", m, b, highlightX: x },
+    vizData: { kind: "linear", m, b, highlightX: x, hideHighlight: true },
   };
 }
 
-function genQuadraticRoots(rng: () => number, id: number): Question {
+function genQuadraticRoots(rng: () => number, id: number): QuestionDraft {
   const r1 = pickInt(rng, 1, 8);
-  const r2 = pickInt(rng, -8, 8);
+  let r2 = pickInt(rng, -8, 8);
+  if (r2 === 0) r2 = pickInt(rng, 1, 8) * (rng() > 0.5 ? 1 : -1);
   const b = -(r1 + r2);
   const c = r1 * r2;
-  const signB = b >= 0 ? "+" : "-";
   const correct = r2 === r1 ? String(r1) : `${Math.min(r1, r2)}, ${Math.max(r1, r2)}`;
   const wrong = [
     String(r1 + r2),
     String(Math.abs(r1 * r2)),
-    String(r1 - r2),
+    `${r1}, ${r1 + r2}`,
   ];
   const { options, correctIndex } = buildOptions(rng, correct, wrong);
   return {
     id,
     topic: "algebra",
-    prompt: `Find the roots of $x^2 ${signB} ${Math.abs(b)}x + ${c} = 0$`,
+    prompt: `Find the roots of ${formatQuadraticPrompt(b, c)}`,
     options,
     correctIndex,
     explanation: `Factor: $(x - ${r1})(x - ${r2}) = 0$, roots are $x = ${r1}$ and $x = ${r2}$`,
     visualization: "coordinate",
-    vizData: { kind: "quadratic_roots", c, roots: [r1, r2] },
+    vizData: { kind: "quadratic_roots", c, roots: [r1, r2], hideRoots: true },
   };
 }
 
-function genFactorTrinomial(rng: () => number, id: number): Question {
+function genFactorTrinomial(rng: () => number, id: number): QuestionDraft {
   const p = pickInt(rng, 1, 7);
   const q = pickInt(rng, 1, 7);
   const correct = `$(x + ${p})(x + ${q})$`;
@@ -263,7 +288,7 @@ function genFactorTrinomial(rng: () => number, id: number): Question {
   };
 }
 
-function genSystemOfEquations(rng: () => number, id: number): Question {
+function genSystemOfEquations(rng: () => number, id: number): QuestionDraft {
   const x = pickInt(rng, 1, 9);
   const y = pickInt(rng, 1, 9);
   const a1 = pickInt(rng, 1, 5);
@@ -286,11 +311,11 @@ function genSystemOfEquations(rng: () => number, id: number): Question {
     correctIndex,
     explanation: `Substitution or elimination gives $x = ${x}$, $y = ${y}$`,
     visualization: "coordinate",
-    vizData: { kind: "system", system: [a1, b1, c1, a2, b2, c2], solution: [x, y] },
+    vizData: { kind: "system", system: [a1, b1, c1, a2, b2, c2], solution: [x, y], hideHighlight: true },
   };
 }
 
-function genExponentSimplify(rng: () => number, id: number): Question {
+function genExponentSimplify(rng: () => number, id: number): QuestionDraft {
   const base = pickFrom(rng, [2, 3, 5]);
   const exp = pickInt(rng, 2, 5);
   const correct = String(Math.pow(base, exp));
@@ -310,15 +335,16 @@ function genExponentSimplify(rng: () => number, id: number): Question {
   };
 }
 
-function genInequality(rng: () => number, id: number): Question {
+function genInequality(rng: () => number, id: number): QuestionDraft {
   const k = pickInt(rng, 2, 8);
   const c = pickInt(rng, 10, 40);
   const boundary = c / k;
-  const correct = `$x ${c % k === 0 ? "\\leq" : "<"} ${boundary % 1 === 0 ? boundary : boundary.toFixed(1)}$`;
+  const boundaryStr = Number.isInteger(boundary) ? String(boundary) : boundary.toFixed(1);
+  const correct = `$x \\leq ${boundaryStr}$`;
   const { options, correctIndex } = buildOptions(rng, correct, [
-    `$x > ${boundary}$`,
-    `$x \\geq ${Math.ceil(boundary)}$`,
-    `$x \\leq ${Math.floor(boundary) - 1}$`,
+    `$x > ${boundaryStr}$`,
+    `$x \\geq ${Number(boundaryStr) + 1}$`,
+    `$x \\leq ${Number(boundaryStr) - 1}$`,
   ]);
   return {
     id,
@@ -331,7 +357,7 @@ function genInequality(rng: () => number, id: number): Question {
   };
 }
 
-function genPythagorean(rng: () => number, id: number): Question {
+function genPythagorean(rng: () => number, id: number): QuestionDraft {
   const triples: [number, number, number][] = [
     [3, 4, 5],
     [5, 12, 13],
@@ -351,17 +377,17 @@ function genPythagorean(rng: () => number, id: number): Question {
     id,
     topic: "geometry",
     prompt: askLeg
-      ? `A right triangle has legs $${b}$ and hypotenuse $${c}$. Find the missing leg.`
+      ? `A right triangle has a leg $${b}$ and hypotenuse $${c}$. Find the missing leg.`
       : `A right triangle has legs $${a}$ and $${b}$. Find the hypotenuse.`,
     options,
     correctIndex,
     explanation: `$c^2 = a^2 + b^2 = ${a ** 2} + ${b ** 2} = ${c ** 2}$, so missing side $= ${correct}$`,
     visualization: "triangle",
-    vizData: { kind: "right_triangle", a: askLeg ? Number(correct) : a, b, c: askLeg ? c : Number(correct) },
+    vizData: { kind: "right_triangle", a, b, c, hiddenSides: askLeg ? ["a"] : ["c"] },
   };
 }
 
-function genTriangleArea(rng: () => number, id: number): Question {
+function genTriangleArea(rng: () => number, id: number): QuestionDraft {
   const base = pickInt(rng, 6, 20);
   const height = pickInt(rng, 4, 16);
   const correct = String((base * height) / 2);
@@ -382,7 +408,7 @@ function genTriangleArea(rng: () => number, id: number): Question {
   };
 }
 
-function genCircleArea(rng: () => number, id: number): Question {
+function genCircleArea(rng: () => number, id: number): QuestionDraft {
   const r = pickInt(rng, 2, 12);
   const correctStr = `${r * r}\\pi`;
   const { options, correctIndex } = buildOptions(rng, correctStr, [
@@ -402,7 +428,7 @@ function genCircleArea(rng: () => number, id: number): Question {
   };
 }
 
-function genRectanglePerimeter(rng: () => number, id: number): Question {
+function genRectanglePerimeter(rng: () => number, id: number): QuestionDraft {
   const l = pickInt(rng, 5, 20);
   const w = pickInt(rng, 3, 15);
   const correct = String(2 * (l + w));
@@ -422,7 +448,7 @@ function genRectanglePerimeter(rng: () => number, id: number): Question {
   };
 }
 
-function genSimilarTriangles(rng: () => number, id: number): Question {
+function genSimilarTriangles(rng: () => number, id: number): QuestionDraft {
   const k = pickInt(rng, 2, 4);
   const side = pickInt(rng, 3, 9);
   const correct = String(side * k);
@@ -439,14 +465,19 @@ function genSimilarTriangles(rng: () => number, id: number): Question {
     correctIndex,
     explanation: `Corresponding sides scale by ${k}: $${side} \\times ${k} = ${correct}$`,
     visualization: "triangle",
-    vizData: { kind: "similar", scale: k, side },
+    vizData: { kind: "similar", scale: k, side, hideBigSide: true },
   };
 }
 
-function genSohCahToa(rng: () => number, id: number): Question {
-  const a = pickInt(rng, 3, 12);
-  const b = pickInt(rng, 4, 15);
-  const c = Math.round(Math.sqrt(a * a + b * b));
+function genSohCahToa(rng: () => number, id: number): QuestionDraft {
+  const triples: [number, number, number][] = [
+    [3, 4, 5],
+    [5, 12, 13],
+    [8, 15, 17],
+    [7, 24, 25],
+    [6, 8, 10],
+  ];
+  const [a, b, c] = pickFrom(rng, triples);
   const askOpp = rng() > 0.5;
   const correct = askOpp ? String(a) : String(b);
   const { options, correctIndex } = buildOptions(rng, correct, [
@@ -464,11 +495,11 @@ function genSohCahToa(rng: () => number, id: number): Question {
     correctIndex,
     explanation: `Use SOH-CAH-TOA. Missing side $= ${correct}$`,
     visualization: "triangle",
-    vizData: { kind: "trig", a, b, c },
+    vizData: { kind: "trig", a, b, c, hiddenSides: askOpp ? ["a"] : ["b"] },
   };
 }
 
-function genSpecialAngles(rng: () => number, id: number): Question {
+function genSpecialAngles(rng: () => number, id: number): QuestionDraft {
   const pairs: [string, string][] = [
     ["\\sin 30°", "1/2"],
     ["\\cos 60°", "1/2"],
@@ -484,6 +515,7 @@ function genSpecialAngles(rng: () => number, id: number): Question {
   const [expr, val] = pickFrom(rng, pairs);
   const correct = `$${val}$`;
   const { options, correctIndex } = buildOptions(rng, correct, ["$0$", "$\\sqrt{2}$", "$\\sqrt{3}$"]);
+  const noDiagram = /\\sin 90°|\\cos 0°/.test(expr);
   return {
     id,
     topic: "trigonometry",
@@ -491,12 +523,12 @@ function genSpecialAngles(rng: () => number, id: number): Question {
     options,
     correctIndex,
     explanation: `Special angle value: $${expr} = ${val}$`,
-    visualization: "triangle",
-    vizData: { kind: "special_angle", special: expr },
+    visualization: noDiagram ? "none" : "triangle",
+    vizData: noDiagram ? undefined : { kind: "special_angle", special: expr },
   };
 }
 
-function genTrigIdentity(rng: () => number, id: number): Question {
+function genTrigIdentity(rng: () => number, id: number): QuestionDraft {
   const identities = [
     {
       prompt: `Simplify: $\\sin^2\\theta + \\cos^2\\theta$`,
@@ -536,7 +568,7 @@ function genTrigIdentity(rng: () => number, id: number): Question {
   };
 }
 
-function genMean(rng: () => number, id: number): Question {
+function genMean(rng: () => number, id: number): QuestionDraft {
   const nums = Array.from({ length: 5 }, () => pickInt(rng, 10, 99));
   const sum = nums.reduce((a, b) => a + b, 0);
   const correct = (sum / nums.length).toFixed(1);
@@ -557,7 +589,7 @@ function genMean(rng: () => number, id: number): Question {
   };
 }
 
-function genMedian(rng: () => number, id: number): Question {
+function genMedian(rng: () => number, id: number): QuestionDraft {
   const nums = Array.from({ length: 5 }, () => pickInt(rng, 1, 30)).sort((a, b) => a - b);
   const correct = String(nums[2]);
   const { options, correctIndex } = buildOptions(rng, correct, [
@@ -577,7 +609,7 @@ function genMedian(rng: () => number, id: number): Question {
   };
 }
 
-function genProbability(rng: () => number, id: number): Question {
+function genProbability(rng: () => number, id: number): QuestionDraft {
   const red = pickInt(rng, 2, 6);
   const blue = pickInt(rng, 3, 8);
   const total = red + blue;
@@ -598,7 +630,7 @@ function genProbability(rng: () => number, id: number): Question {
   };
 }
 
-function genCombination(rng: () => number, id: number): Question {
+function genCombination(rng: () => number, id: number): QuestionDraft {
   const n = pickInt(rng, 5, 14);
   const r = pickFrom(rng, [2, 3] as const);
   let correct: string;
@@ -626,7 +658,7 @@ function genCombination(rng: () => number, id: number): Question {
   };
 }
 
-function genArithmeticSequence(rng: () => number, id: number): Question {
+function genArithmeticSequence(rng: () => number, id: number): QuestionDraft {
   const a1 = pickInt(rng, 2, 10);
   const d = pickInt(rng, 2, 7);
   const n = pickInt(rng, 5, 10);
@@ -647,7 +679,7 @@ function genArithmeticSequence(rng: () => number, id: number): Question {
   };
 }
 
-function genGeometricSequence(rng: () => number, id: number): Question {
+function genGeometricSequence(rng: () => number, id: number): QuestionDraft {
   const a1 = pickInt(rng, 2, 5);
   const r = pickInt(rng, 2, 3);
   const n = pickInt(rng, 3, 5);
@@ -668,12 +700,13 @@ function genGeometricSequence(rng: () => number, id: number): Question {
   };
 }
 
-function genFunctionEvaluate(rng: () => number, id: number): Question {
+function genFunctionEvaluate(rng: () => number, id: number): QuestionDraft {
   const m = pickInt(rng, 1, 5);
-  const b = pickInt(rng, -5, 5);
+  let b = pickInt(rng, -5, 5);
+  if (b === 0) b = pickInt(rng, 1, 5) * (rng() > 0.5 ? 1 : -1);
   const x = pickInt(rng, 1, 8);
   const correct = String(m * x + b);
-  const sign = b >= 0 ? "+" : "-";
+  const bPart = formatLinear(b);
   const { options, correctIndex } = buildOptions(rng, correct, [
     String(m * x - b),
     String(m + x + b),
@@ -682,16 +715,20 @@ function genFunctionEvaluate(rng: () => number, id: number): Question {
   return {
     id,
     topic: "functions",
-    prompt: `If $f(x) = ${m}x ${sign} ${Math.abs(b)}$, find $f(${x})$.`,
+    prompt: bPart
+      ? `If $f(x) = ${m}x ${bPart}$, find $f(${x})$.`
+      : `If $f(x) = ${m}x$, find $f(${x})$.`,
     options,
     correctIndex,
-    explanation: `$f(${x}) = ${m}(${x}) ${sign} ${Math.abs(b)} = ${correct}$`,
+    explanation: bPart
+      ? `$f(${x}) = ${m}(${x}) ${bPart} = ${correct}$`
+      : `$f(${x}) = ${m}(${x}) = ${correct}$`,
     visualization: "coordinate",
-    vizData: { kind: "linear", m, b, highlightX: x },
+    vizData: { kind: "linear", m, b, highlightX: x, hideHighlight: true },
   };
 }
 
-function genParabolaVertex(rng: () => number, id: number): Question {
+function genParabolaVertex(rng: () => number, id: number): QuestionDraft {
   const h = pickInt(rng, -4, 4);
   const k = pickInt(rng, -6, 6);
   const correct = `$(${h}, ${k})$`;
@@ -710,11 +747,11 @@ function genParabolaVertex(rng: () => number, id: number): Question {
     correctIndex,
     explanation: `Vertex form $y = (x - h)^2 + k$ gives vertex $(${h}, ${k})$`,
     visualization: "coordinate",
-    vizData: { kind: "quadratic_vertex", vertex: [h, k] },
+    vizData: { kind: "quadratic_vertex", vertex: [h, k], hideHighlight: true },
   };
 }
 
-function genProjectileHeight(rng: () => number, id: number): Question {
+function genProjectileHeight(rng: () => number, id: number): QuestionDraft {
   const v0 = pickInt(rng, 8, 20);
   const t = pickInt(rng, 1, 4);
   const g = 10;

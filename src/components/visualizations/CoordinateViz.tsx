@@ -25,6 +25,10 @@ interface CoordinateVizProps {
   roots?: number[];
   system?: number[];
   solution?: number[];
+  /** Do not mark the answer point (vertex, intersection, x-intercept, etc.) */
+  hideHighlight?: boolean;
+  /** Do not mark x-intercepts / roots on the graph */
+  hideRoots?: boolean;
 }
 
 const COLORS = {
@@ -63,6 +67,8 @@ export function CoordinateViz(props: CoordinateVizProps) {
     roots,
     system,
     solution,
+    hideHighlight = false,
+    hideRoots = false,
   } = props;
 
   const kind = inferKind(props);
@@ -223,18 +229,19 @@ export function CoordinateViz(props: CoordinateVizProps) {
                 connectNulls
               />
             )}
-            {rootPoints.map((pt, i) => (
-              <ReferenceDot
-                key={i}
-                x={pt.x}
-                y={pt.y}
-                r={6}
-                fill={COLORS.root}
-                stroke="#fff"
-                strokeWidth={2}
-              />
-            ))}
-            {highlight && (
+            {!hideRoots &&
+              rootPoints.map((pt, i) => (
+                <ReferenceDot
+                  key={i}
+                  x={pt.x}
+                  y={pt.y}
+                  r={6}
+                  fill={COLORS.root}
+                  stroke="#fff"
+                  strokeWidth={2}
+                />
+              ))}
+            {!hideHighlight && highlight && (
               <ReferenceDot
                 x={highlight.x}
                 y={highlight.y}

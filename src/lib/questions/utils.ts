@@ -50,10 +50,17 @@ export function buildOptions(
   correct: string,
   distractors: string[],
 ): { options: string[]; correctIndex: number } {
-  const unique = Array.from(new Set([correct, ...distractors])).slice(0, 4);
-  while (unique.length < 4) {
-    unique.push(`${pickInt(rng, -20, 20)}`);
+  const unique = new Set<string>([correct]);
+  for (const d of distractors) {
+    if (d !== correct) unique.add(d);
   }
-  const options = shuffleWithRng(rng, unique);
+  let attempt = 0;
+  while (unique.size < 4 && attempt < 50) {
+    const n = pickInt(rng, 1, 99);
+    unique.add(String(n));
+    unique.add(String(n + pickInt(rng, 1, 9)));
+    attempt += 1;
+  }
+  const options = shuffleWithRng(rng, Array.from(unique).slice(0, 4));
   return { options, correctIndex: options.indexOf(correct) };
 }

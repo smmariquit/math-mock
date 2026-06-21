@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { AnswersMap, ExamSession } from "../types";
+import type { AnswersMap, AttemptSummary, ExamSession } from "../types";
+import { countAnswered } from "../scoring";
 
 let client: SupabaseClient | null = null;
 
@@ -59,6 +60,47 @@ function rowToSession(row: DbRow): ExamSession {
     correctCount: row.correct_count ?? undefined,
     topicBreakdown: row.topic_breakdown ?? undefined,
   };
+}
+
+interface DbListRow {
+  id: string;
+  student_name: string;
+  email: string;
+  status: ExamSession["status"];
+  score: number | null;
+  correct_count: number | null;
+  answers: AnswersMap;
+  started_at: string;
+  updated_at: string;
+}
+
+function rowToAttemptSummary(row: DbListRow): AttemptSummary {
+  return {
+    id: row.id,
+    studentName: row.student_name,
+    email: row.email,
+    status: row.status,
+    score: row.score ?? undefined,
+    correctCount: row.correct_count ?? undefined,
+    answeredCount: countAnswered(row.answers ?? {}),
+    startedAt: row.started_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function loadAllAttempts(): Promise<AttemptSummary[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("exam_sessions")
+    .select(
+      "id, student_name, email, status, score, correct_count, answers, started_at, updated_at",
+    )
+    .order("updated_at", { ascending: false });
+
+  if (error || !data) return [];
+  return (data as DbListRow[]).map(rowToAttemptSummary);
 }
 
 export async function createSession(

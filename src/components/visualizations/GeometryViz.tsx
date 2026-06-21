@@ -22,6 +22,10 @@ export interface GeometryVizProps {
   side?: number;
   r?: number;
   special?: string;
+  /** Side labels to hide (shown as ?). a = vertical leg, b = horizontal leg, c = hypotenuse */
+  hiddenSides?: Array<"a" | "b" | "c">;
+  /** Hide the scaled side label on the larger similar triangle */
+  hideBigSide?: boolean;
 }
 
 function inferKind(props: GeometryVizProps): GeometryKind {
@@ -48,7 +52,18 @@ function labelSide(
   );
 }
 
-function drawRightTriangle(board: JXG.Board, a: number, b: number, c: number, showTheta = false) {
+function sideLabel(value: number, hidden: boolean): string {
+  return hidden ? "?" : String(value);
+}
+
+function drawRightTriangle(
+  board: JXG.Board,
+  a: number,
+  b: number,
+  c: number,
+  showTheta = false,
+  hiddenSides: Set<"a" | "b" | "c"> = new Set(),
+) {
   const s = 4.5 / Math.max(a, b, c);
   const A = board.create("point", [0, 0], {
     name: "A",
@@ -79,9 +94,9 @@ function drawRightTriangle(board: JXG.Board, a: number, b: number, c: number, sh
   });
   board.create("angle", [B, A, C], { type: "square", strokeColor: JXG_DARK.grid, fillColor: "none" });
 
-  labelSide(board, A, B, String(b), [0, -0.4]);
-  labelSide(board, A, C, String(a), [-0.5, 0]);
-  labelSide(board, B, C, String(c), [0.4, 0.25]);
+  labelSide(board, A, B, sideLabel(b, hiddenSides.has("b")), [0, -0.4]);
+  labelSide(board, A, C, sideLabel(a, hiddenSides.has("a")), [-0.5, 0]);
+  labelSide(board, B, C, sideLabel(c, hiddenSides.has("c")), [0.4, 0.25]);
 
   if (showTheta) {
     board.create("angle", [C, B, A], {
@@ -135,7 +150,7 @@ function drawBaseHeight(board: JXG.Board, base: number, height: number) {
   board.setBoundingBox([-0.6, hy + 1.2, bx + 0.8, -0.9], true);
 }
 
-function drawSimilar(board: JXG.Board, scaleFactor: number, side: number) {
+function drawSimilar(board: JXG.Board, scaleFactor: number, side: number, hideBigSide = false) {
   const unit = 1.1;
   const h = side * unit * 0.6;
 
@@ -160,7 +175,13 @@ function drawSimilar(board: JXG.Board, scaleFactor: number, side: number) {
     fillColor: "rgba(192,132,252,0.15)",
     highlight: false,
   });
-  labelSide(board, bigA, bigB, String(side * big), [0, -0.35]);
+  labelSide(
+    board,
+    bigA,
+    bigB,
+    hideBigSide ? "?" : String(side * big),
+    [0, -0.35],
+  );
   board.setBoundingBox([-0.5, h * big + 1.3, off + side * unit * big + 0.5, -1], true);
 }
 
@@ -191,10 +212,46 @@ function drawCircle(board: JXG.Board, r: number) {
   board.setBoundingBox([-r - 1.8, r + 1.8, r + 1.8, -r - 1.8], true);
 }
 
-function drawSpecialAngle(board: JXG.Board) {
-  const A = board.create("point", [0, 0], { size: 2, fixed: true, visible: false }) as JXG.Point;
-  const B = board.create("point", [4, 0], { size: 2, fixed: true, visible: false }) as JXG.Point;
-  const C = board.create("point", [0, (4 * Math.sqrt(3)) / 3], { size: 2, fixed: true, visible: false }) as JXG.Point;
+function requestedAngle(expr?: string): number | null {
+  const match = expr?.match(/(\d+)°/);
+  return match ? Number(match[1]) : null;
+}
+
+function specialAngleFamily(expr?: string): "306090" | "454590" | "none" {
+  const angle = requestedAngle(expr);
+  if (angle === null) return "306090";
+  if (angle === 45) return "454590";
+  if (angle === 30 || angle === 60) return "306090";
+  return "none";
+}
+
+function markAngle(
+  board: JXG.Board,
+  points: [JXG.Point, JXG.Point, JXG.Point],
+  label: string,
+  highlighted: boolean,
+  radius: number,
+) {
+  board.create("angle", points, {
+    radius,
+    name: label,
+    withLabel: true,
+    strokeColor: highlighted ? JXG_DARK.accent : JXG_DARK.purple,
+    fillColor: highlighted ? "rgba(251,146,60,0.25)" : "rgba(192,132,252,0.15)",
+    label: JXG_DARK.label,
+  });
+}
+
+/** 30°–60°–90° reference: short leg horizontal, long leg vertical, 60° at bottom-right. */
+function draw306090(board: JXG.Board, expr?: string) {
+  const focus = requestedAngle(expr);
+  const unit = 3.2;
+  const shortLeg = unit;
+  const longLeg = unit * Math.sqrt(3);
+
+  const A = board.create("point", [0, 0], { visible: false, fixed: true }) as JXG.Point;
+  const B = board.create("point", [shortLeg, 0], { visible: false, fixed: true }) as JXG.Point;
+  const C = board.create("point", [0, longLeg], { visible: false, fixed: true }) as JXG.Point;
 
   board.create("polygon", [A, B, C], {
     borders: { strokeColor: JXG_DARK.stroke, strokeWidth: 2.5 },
@@ -202,30 +259,45 @@ function drawSpecialAngle(board: JXG.Board) {
     highlight: false,
   });
   board.create("angle", [B, A, C], { type: "square", strokeColor: JXG_DARK.grid, fillColor: "none" });
-  board.create("angle", [A, B, C], {
-    radius: 0.75,
-    name: "60°",
-    withLabel: true,
-    strokeColor: JXG_DARK.accent,
-    fillColor: "rgba(251,146,60,0.2)",
-    label: JXG_DARK.label,
+  markAngle(board, [A, B, C], "60°", focus === 60, 0.75);
+  markAngle(board, [B, C, A], "30°", focus === 30, 0.55);
+  board.setBoundingBox([-0.8, longLeg + 1.1, shortLeg + 1.1, -0.9], true);
+}
+
+/** 45°–45°–90° reference: equal legs, 45° at each acute corner. */
+function draw454590(board: JXG.Board, expr?: string) {
+  const focus = requestedAngle(expr);
+  const leg = 3.2;
+
+  const A = board.create("point", [0, 0], { visible: false, fixed: true }) as JXG.Point;
+  const B = board.create("point", [leg, 0], { visible: false, fixed: true }) as JXG.Point;
+  const C = board.create("point", [0, leg], { visible: false, fixed: true }) as JXG.Point;
+
+  board.create("polygon", [A, B, C], {
+    borders: { strokeColor: JXG_DARK.stroke, strokeWidth: 2.5 },
+    fillColor: JXG_DARK.fill,
+    highlight: false,
   });
-  board.create("angle", [B, C, A], {
-    radius: 0.55,
-    name: "30°",
-    withLabel: true,
-    strokeColor: JXG_DARK.purple,
-    fillColor: "rgba(192,132,252,0.2)",
-    label: JXG_DARK.label,
-  });
-  labelSide(board, A, B, "1", [0, -0.35]);
-  labelSide(board, A, C, "√3", [-0.55, 0]);
-  labelSide(board, B, C, "2", [0.45, 0.2]);
-  board.setBoundingBox([-0.9, 3.4, 5, -0.9], true);
+  board.create("angle", [B, A, C], { type: "square", strokeColor: JXG_DARK.grid, fillColor: "none" });
+  markAngle(board, [A, B, C], "45°", focus === 45, 0.65);
+  markAngle(board, [B, C, A], "45°", focus === 45, 0.55);
+  board.setBoundingBox([-0.8, leg + 1.1, leg + 1.1, -0.9], true);
+}
+
+function drawSpecialAngle(board: JXG.Board, expr?: string) {
+  const family = specialAngleFamily(expr);
+  if (family === "454590") {
+    draw454590(board, expr);
+    return;
+  }
+  if (family === "306090") {
+    draw306090(board, expr);
+  }
 }
 
 function renderGeometry(board: JXG.Board, props: GeometryVizProps) {
   const kind = inferKind(props);
+  const hiddenSides = new Set(props.hiddenSides ?? []);
   switch (kind) {
     case "circle":
       drawCircle(board, props.r ?? 5);
@@ -234,16 +306,16 @@ function renderGeometry(board: JXG.Board, props: GeometryVizProps) {
       drawBaseHeight(board, props.base ?? 10, props.height ?? 8);
       break;
     case "similar":
-      drawSimilar(board, props.scale ?? 2, props.side ?? 4);
+      drawSimilar(board, props.scale ?? 2, props.side ?? 4, props.hideBigSide);
       break;
     case "special_angle":
-      drawSpecialAngle(board);
+      drawSpecialAngle(board, props.special);
       break;
     case "trig":
-      drawRightTriangle(board, props.a ?? 3, props.b ?? 4, props.c ?? 5, true);
+      drawRightTriangle(board, props.a ?? 3, props.b ?? 4, props.c ?? 5, true, hiddenSides);
       break;
     default:
-      drawRightTriangle(board, props.a ?? 3, props.b ?? 4, props.c ?? 5);
+      drawRightTriangle(board, props.a ?? 3, props.b ?? 4, props.c ?? 5, false, hiddenSides);
   }
 }
 
@@ -307,6 +379,8 @@ export function GeometryViz(props: GeometryVizProps) {
     props.side,
     props.r,
     props.special,
+    props.hiddenSides,
+    props.hideBigSide,
   ]);
 
   return (

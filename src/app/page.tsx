@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useExamStore } from "@/lib/exam/store";
 import { getStoredEmail, isValidEmail } from "@/lib/supabase/client";
@@ -102,6 +103,12 @@ export default function HomePage() {
             {loading === "restore" ? "Restoring…" : "Restore"}
           </button>
         </div>
+
+        <p className="mt-10 text-center text-xs text-slate-600">
+          <Link href="/attempts" className="hover:text-slate-400">
+            View attempts
+          </Link>
+        </p>
       </div>
     </div>
   );
