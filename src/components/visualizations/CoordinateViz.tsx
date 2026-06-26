@@ -66,7 +66,6 @@ export function CoordinateViz(props: CoordinateVizProps) {
     vertex,
     roots,
     system,
-    solution,
     hideHighlight = false,
     hideRoots = false,
   } = props;
@@ -91,14 +90,12 @@ export function CoordinateViz(props: CoordinateVizProps) {
         y1: b1 !== 0 ? (c1 - a1 * x) / b1 : null,
         y2: b2 !== 0 ? (c2 - a2 * x) / b2 : null,
       }));
-      const sol = solution ?? [];
       const ys = rows.flatMap((r) => [r.y1, r.y2].filter((y): y is number => y !== null));
-      if (sol.length === 2) ys.push(sol[1]!);
       return {
         data: rows,
         line2: true,
         roots: [],
-        highlight: sol.length === 2 ? { x: sol[0]!, y: sol[1]! } : null,
+        highlight: null,
         xDomain: [xMin, xMax] as [number, number],
         yDomain: [Math.min(...ys, 0) - 2, Math.max(...ys, 0) + 2] as [number, number],
       };
@@ -167,7 +164,10 @@ export function CoordinateViz(props: CoordinateVizProps) {
       xDomain: [xMin, xMax] as [number, number],
       yDomain: [Math.min(...ys, 0) - 2, Math.max(...ys, 0) + 2] as [number, number],
     };
-  }, [kind, m, b, c, highlightX, vertex, roots, system, solution]);
+  }, [kind, m, b, c, highlightX, vertex, roots, system]);
+
+  const showTooltip = kind !== "system";
+  const showHighlight = kind !== "system" && !hideHighlight;
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -194,19 +194,21 @@ export function CoordinateViz(props: CoordinateVizProps) {
             />
             <ReferenceLine y={0} stroke={COLORS.axis} strokeWidth={1.5} />
             <ReferenceLine x={0} stroke={COLORS.axis} strokeWidth={1.5} />
-            <Tooltip
-              contentStyle={{
-                background: "#0f172a",
-                border: "1px solid #334155",
-                borderRadius: 8,
-                fontSize: 12,
-              }}
-              formatter={(value) => [
-                typeof value === "number" ? value.toFixed(2) : String(value ?? ""),
-                "y",
-              ]}
-              labelFormatter={(x) => `x = ${x}`}
-            />
+            {showTooltip && (
+              <Tooltip
+                contentStyle={{
+                  background: "#0f172a",
+                  border: "1px solid #334155",
+                  borderRadius: 8,
+                  fontSize: 12,
+                }}
+                formatter={(value) => [
+                  typeof value === "number" ? value.toFixed(2) : String(value ?? ""),
+                  "y",
+                ]}
+                labelFormatter={(x) => `x = ${x}`}
+              />
+            )}
             <Line
               type="linear"
               dataKey="y1"
@@ -241,7 +243,7 @@ export function CoordinateViz(props: CoordinateVizProps) {
                   strokeWidth={2}
                 />
               ))}
-            {!hideHighlight && highlight && (
+            {showHighlight && highlight && (
               <ReferenceDot
                 x={highlight.x}
                 y={highlight.y}

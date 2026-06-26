@@ -96,7 +96,9 @@ function verifyQuestion(q: Question): string[] {
     }
     if (kind === "quadratic_roots" && !q.vizData?.hideRoots) errors.push("roots marked on graph");
     if (kind === "quadratic_vertex" && !q.vizData?.hideHighlight) errors.push("vertex marked on graph");
-    if (kind === "system" && !q.vizData?.hideHighlight) errors.push("intersection marked on graph");
+    if (kind === "system" && !q.vizData?.hideHighlight) {
+      errors.push("system graph should hide intersection (hideHighlight)");
+    }
   }
 
   if (q.vizData?.kind === "right_triangle") {
