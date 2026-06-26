@@ -163,10 +163,20 @@ function getHints(q: QuestionDraft): string[] {
   }
 
   if (prompt.includes("\\cos\\theta") || prompt.includes("\\sin\\theta")) {
+    if (!prompt.startsWith("Simplify:")) {
+      return hints(
+        "Label the triangle: opposite, adjacent, and hypotenuse relative to $\\theta$.",
+        "SOH-CAH-TOA: $\\sin = \\dfrac{\\text{opp}}{\\text{hyp}}$, $\\cos = \\dfrac{\\text{adj}}{\\text{hyp}}$.",
+        "Use the given ratio to find the missing side.",
+      );
+    }
+  }
+
+  if (prompt.startsWith("Simplify:") && prompt.includes("\\tan^2\\theta")) {
     return hints(
-      "Label the triangle: opposite, adjacent, and hypotenuse relative to $\\theta$.",
-      "SOH-CAH-TOA: $\\sin = \\dfrac{\\text{opp}}{\\text{hyp}}$, $\\cos = \\dfrac{\\text{adj}}{\\text{hyp}}$.",
-      "Use the given ratio to find the missing side.",
+      "This is a Pythagorean identity related to $\\sin^2\\theta + \\cos^2\\theta = 1$.",
+      "Divide the main identity by $\\cos^2\\theta$ to get $1 + \\tan^2\\theta = \\sec^2\\theta$.",
+      "The simplified form is $\\sec^2\\theta$.",
     );
   }
 

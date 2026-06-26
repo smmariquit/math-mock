@@ -560,18 +560,33 @@ function genTrigIdentityAdvanced(rng: () => number, id: number): QuestionDraft {
       correct: "$\\sin\\theta \\tan\\theta$",
       distractors: ["$\\tan\\theta$", "$\\sec\\theta$", "$1$"],
       explanation: `$\\sec\\theta - \\cos\\theta = \\dfrac{1 - \\cos^2\\theta}{\\cos\\theta} = \\dfrac{\\sin^2\\theta}{\\cos\\theta}$`,
+      hints: [
+        "Write $\\dfrac{1}{\\cos\\theta}$ as $\\sec\\theta$, then combine over a common denominator.",
+        "Use $1 - \\cos^2\\theta = \\sin^2\\theta$ in the numerator.",
+        "Simplify $\\dfrac{\\sin^2\\theta}{\\cos\\theta}$ to $\\sin\\theta \\tan\\theta$.",
+      ],
     },
     {
       prompt: `Simplify: $\\tan\\theta \\cdot \\cos\\theta$`,
       correct: "$\\sin\\theta$",
       distractors: ["$\\cos\\theta$", "$\\tan\\theta$", "$1$"],
       explanation: `$\\tan\\theta \\cos\\theta = \\dfrac{\\sin\\theta}{\\cos\\theta} \\cdot \\cos\\theta = \\sin\\theta$`,
+      hints: [
+        "Replace $\\tan\\theta$ with $\\dfrac{\\sin\\theta}{\\cos\\theta}$.",
+        "Multiply by $\\cos\\theta$ — the cosines cancel.",
+        "Only $\\sin\\theta$ remains.",
+      ],
     },
     {
       prompt: `Simplify: $1 + \\tan^2\\theta$`,
       correct: "$\\sec^2\\theta$",
       distractors: ["$\\tan^2\\theta$", "$1$", "$\\cos^2\\theta$"],
       explanation: `Pythagorean identity: $1 + \\tan^2\\theta = \\sec^2\\theta$`,
+      hints: [
+        "This is a Pythagorean identity related to $\\sin^2\\theta + \\cos^2\\theta = 1$.",
+        "Divide the main identity by $\\cos^2\\theta$ to get $1 + \\tan^2\\theta = \\sec^2\\theta$.",
+        "The simplified form is $\\sec^2\\theta$, not $\\tan^2\\theta$ alone.",
+      ],
     },
   ];
   const item = pickFrom(rng, items);
@@ -584,6 +599,7 @@ function genTrigIdentityAdvanced(rng: () => number, id: number): QuestionDraft {
     correctIndex,
     explanation: item.explanation,
     visualization: "none",
+    hints: item.hints,
   };
 }
 

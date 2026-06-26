@@ -492,24 +492,44 @@ function genTrigIdentity(rng: () => number, id: number): QuestionDraft {
       correct: "$1$",
       distractors: ["$0$", "$2$", "$\\sin\\theta$"],
       explanation: `Pythagorean identity: $\\sin^2\\theta + \\cos^2\\theta = 1$`,
+      hints: [
+        "This is the main Pythagorean identity — true for every angle $\\theta$.",
+        "The sum of the squares of sine and cosine always equals 1.",
+        "The expression simplifies to the constant $1$.",
+      ],
     },
     {
       prompt: `Simplify: $1 - \\sin^2\\theta$`,
       correct: "$\\cos^2\\theta$",
       distractors: ["$\\sin^2\\theta$", "$1$", "$\\tan^2\\theta$"],
       explanation: `$1 - \\sin^2\\theta = \\cos^2\\theta$`,
+      hints: [
+        "Start from $\\sin^2\\theta + \\cos^2\\theta = 1$.",
+        "Subtract $\\sin^2\\theta$ from both sides.",
+        "You get $\\cos^2\\theta$ — not $\\sin^2\\theta$ or $1$.",
+      ],
     },
     {
       prompt: `Simplify: $1 - \\cos^2\\theta$`,
       correct: "$\\sin^2\\theta$",
       distractors: ["$\\cos^2\\theta$", "$1$", "$\\sec^2\\theta$"],
       explanation: `$1 - \\cos^2\\theta = \\sin^2\\theta$`,
+      hints: [
+        "Use $\\sin^2\\theta + \\cos^2\\theta = 1$.",
+        "Rearrange to isolate $\\sin^2\\theta$.",
+        "The answer is $\\sin^2\\theta$, the complement of $\\cos^2\\theta$.",
+      ],
     },
     {
       prompt: `Simplify: $\\dfrac{\\sin\\theta}{\\cos\\theta}$`,
       correct: "$\\tan\\theta$",
       distractors: ["$\\cot\\theta$", "$1$", "$\\sin\\theta$"],
       explanation: `$\\tan\\theta = \\dfrac{\\sin\\theta}{\\cos\\theta}$`,
+      hints: [
+        "This is the definition of tangent in terms of sine and cosine.",
+        "Divide $\\sin\\theta$ by $\\cos\\theta$ — do not invert the ratio.",
+        "The result is a single function: $\\tan\\theta$.",
+      ],
     },
   ];
   const item = pickFrom(rng, identities);
@@ -522,6 +542,7 @@ function genTrigIdentity(rng: () => number, id: number): QuestionDraft {
     correctIndex,
     explanation: item.explanation,
     visualization: "none",
+    hints: item.hints,
   };
 }
 
