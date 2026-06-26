@@ -28,7 +28,10 @@ export function ResultsView({ sessionId }: ResultsViewProps) {
   }, [sessionId]);
 
   const questions = useMemo(
-    () => (session ? generateExamQuestions(session.seed, EXAM_ITEM_COUNT) : []),
+    () =>
+      session
+        ? generateExamQuestions(session.examId ?? "standard", session.seed, EXAM_ITEM_COUNT)
+        : [],
     [session],
   );
 

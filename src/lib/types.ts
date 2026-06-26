@@ -14,6 +14,8 @@ export type VisualizationType =
   | "circle"
   | "matter_projectile";
 
+export type ExamId = "standard" | "advanced";
+
 export interface Question {
   id: number;
   topic: Topic;
@@ -30,6 +32,7 @@ export type AnswersMap = Record<number, number | null>;
 
 export interface ExamSession {
   id: string;
+  examId: ExamId;
   studentName: string;
   email: string;
   status: "in_progress" | "completed" | "expired";
@@ -47,6 +50,7 @@ export interface ExamSession {
 
 export interface AttemptSummary {
   id: string;
+  examId: ExamId;
   studentName: string;
   email: string;
   status: ExamSession["status"];

@@ -6,12 +6,8 @@ import { QuestionReviewList } from "@/components/exam/QuestionReviewList";
 import { generateExamQuestions } from "@/lib/questions/generator";
 import { loadSession } from "@/lib/supabase/client";
 import { countAnswered, formatDuration, scoreExam } from "@/lib/scoring";
-import {
-  EXAM_ITEM_COUNT,
-  TOPIC_LABELS,
-  type ExamSession,
-  type Topic,
-} from "@/lib/types";
+import { getExamLabel } from "@/lib/exams/registry";
+import { EXAM_ITEM_COUNT, TOPIC_LABELS, type ExamSession, type Topic } from "@/lib/types";
 
 interface AttemptDetailViewProps {
   sessionId: string;
@@ -55,7 +51,10 @@ export function AttemptDetailView({ sessionId }: AttemptDetailViewProps) {
   }, [sessionId]);
 
   const questions = useMemo(
-    () => (session ? generateExamQuestions(session.seed, EXAM_ITEM_COUNT) : []),
+    () =>
+      session
+        ? generateExamQuestions(session.examId ?? "standard", session.seed, EXAM_ITEM_COUNT)
+        : [],
     [session],
   );
 
@@ -104,6 +103,7 @@ export function AttemptDetailView({ sessionId }: AttemptDetailViewProps) {
             <div>
               <h1 className="text-xl font-semibold">{session.studentName}</h1>
               <p className="mt-1 text-sm text-slate-400">{session.email}</p>
+              <p className="mt-1 text-xs text-slate-500">{getExamLabel(session.examId)}</p>
             </div>
             <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">
               {statusLabel(session.status)}

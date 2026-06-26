@@ -12,7 +12,8 @@ import {
   saveSession,
   getStoredSessionId,
 } from "../supabase/client";
-import type { AnswersMap, ExamSession, Question } from "../types";
+import { DEFAULT_EXAM_ID } from "../exams/registry";
+import type { AnswersMap, ExamId, ExamSession, Question } from "../types";
 import { EXAM_ITEM_COUNT, EXAM_TIME_SECONDS } from "../types";
 
 interface ExamState {
@@ -21,8 +22,12 @@ interface ExamState {
   hydrated: boolean;
   saving: boolean;
   lastSavedAt: number | null;
-  initNewExam: (studentName: string, email: string) => Promise<"started" | "resumed">;
-  restoreByEmail: (email: string) => Promise<ExamSession | null>;
+  initNewExam: (
+    examId: ExamId,
+    studentName: string,
+    email: string,
+  ) => Promise<"started" | "resumed">;
+  restoreByEmail: (examId: ExamId, email: string) => Promise<ExamSession | null>;
   resumeExam: () => Promise<ExamSession | null>;
   setAnswer: (questionId: number, optionIndex: number | null) => void;
   setCurrentIndex: (index: number) => void;
@@ -32,10 +37,16 @@ interface ExamState {
   persist: () => Promise<void>;
 }
 
-function buildLocalSession(studentName: string, email: string, seed: number): ExamSession {
+function buildLocalSession(
+  examId: ExamId,
+  studentName: string,
+  email: string,
+  seed: number,
+): ExamSession {
   const id = crypto.randomUUID();
   return {
     id,
+    examId,
     studentName,
     email: email.trim().toLowerCase(),
     status: "in_progress",
@@ -50,9 +61,11 @@ function buildLocalSession(studentName: string, email: string, seed: number): Ex
 }
 
 function hydrateSession(session: ExamSession) {
-  const questions = generateExamQuestions(session.seed, EXAM_ITEM_COUNT);
-  saveLocalBackup(session);
-  return { session, questions, hydrated: true };
+  const examId = session.examId ?? DEFAULT_EXAM_ID;
+  const sessionWithExam = session.examId ? session : { ...session, examId };
+  const questions = generateExamQuestions(examId, session.seed, EXAM_ITEM_COUNT);
+  saveLocalBackup(sessionWithExam);
+  return { session: sessionWithExam, questions, hydrated: true };
 }
 
 export const useExamStore = create<ExamState>((set, get) => ({
@@ -62,8 +75,8 @@ export const useExamStore = create<ExamState>((set, get) => ({
   saving: false,
   lastSavedAt: null,
 
-  initNewExam: async (studentName, email) => {
-    const existing = await loadActiveSessionByEmail(email);
+  initNewExam: async (examId, studentName, email) => {
+    const existing = await loadActiveSessionByEmail(email, examId);
     if (existing?.status === "in_progress") {
       const session =
         existing.studentName !== studentName
@@ -77,15 +90,15 @@ export const useExamStore = create<ExamState>((set, get) => ({
     }
 
     const seed = Date.now();
-    const remote = await createSession(studentName, email, seed, EXAM_TIME_SECONDS);
-    const session = remote ?? buildLocalSession(studentName, email, seed);
+    const remote = await createSession(studentName, email, examId, seed, EXAM_TIME_SECONDS);
+    const session = remote ?? buildLocalSession(examId, studentName, email, seed);
     set(hydrateSession(session));
     await get().persist();
     return "started";
   },
 
-  restoreByEmail: async (email) => {
-    const session = await loadActiveSessionByEmail(email);
+  restoreByEmail: async (examId, email) => {
+    const session = await loadActiveSessionByEmail(email, examId);
     if (!session || session.status !== "in_progress") {
       set({ hydrated: true });
       return null;

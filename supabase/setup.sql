@@ -6,6 +6,8 @@ create table if not exists exam_sessions (
   updated_at timestamptz not null default now(),
   student_name text not null default 'Student',
   email text not null,
+  exam_id text not null default 'standard'
+    check (exam_id in ('standard', 'advanced')),
   status text not null default 'in_progress'
     check (status in ('in_progress', 'completed', 'expired')),
   seed bigint not null,
@@ -21,8 +23,8 @@ create table if not exists exam_sessions (
 );
 
 create index if not exists exam_sessions_updated_at_idx on exam_sessions (updated_at desc);
-create index if not exists exam_sessions_email_status_idx
-  on exam_sessions (email, status, updated_at desc);
+create index if not exists exam_sessions_email_exam_status_idx
+  on exam_sessions (email, exam_id, status, updated_at desc);
 
 alter table exam_sessions enable row level security;
 

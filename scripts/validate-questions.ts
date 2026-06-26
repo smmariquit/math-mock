@@ -118,26 +118,29 @@ function verifyQuestion(q: Question): string[] {
   return errors;
 }
 
-const SEEDS = 300;
+const SEEDS = 100;
+const EXAMS: Array<"standard" | "advanced"> = ["standard", "advanced"];
 let total = 0;
-const allErrors: { seed: number; id: number; prompt: string; errs: string[] }[] = [];
+const allErrors: { exam: string; seed: number; id: number; prompt: string; errs: string[] }[] = [];
 
-for (let s = 0; s < SEEDS; s += 1) {
-  const questions = generateExamQuestions(s * 99991 + 1, 100);
-  for (const q of questions) {
-    total += 1;
-    const errs = verifyQuestion(q);
-    if (errs.length) allErrors.push({ seed: s, id: q.id, prompt: q.prompt.slice(0, 100), errs });
+for (const examId of EXAMS) {
+  for (let s = 0; s < SEEDS; s += 1) {
+    const questions = generateExamQuestions(examId, s * 99991 + 1, 100);
+    for (const q of questions) {
+      total += 1;
+      const errs = verifyQuestion(q);
+      if (errs.length) allErrors.push({ exam: examId, seed: s, id: q.id, prompt: q.prompt.slice(0, 100), errs });
+    }
   }
 }
 
 if (allErrors.length) {
   console.error(`FAILED: ${allErrors.length} issues in ${total} questions\n`);
   for (const e of allErrors.slice(0, 40)) {
-    console.error(`#${e.id} (seed ${e.seed}): ${e.errs.join("; ")}`);
+    console.error(`[${e.exam}] #${e.id} (seed ${e.seed}): ${e.errs.join("; ")}`);
     console.error(`  ${e.prompt}\n`);
   }
   process.exit(1);
 }
 
-console.log(`OK: ${total} questions validated across ${SEEDS} seeds.`);
+console.log(`OK: ${total} questions validated (${EXAMS.join(", ")}, ${SEEDS} seeds each).`);

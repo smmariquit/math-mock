@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { EXAMS, type ExamId } from "@/lib/exams/registry";
 import { useExamStore } from "@/lib/exam/store";
 import { getStoredEmail, isValidEmail } from "@/lib/supabase/client";
 import { EXAM_ITEM_COUNT, EXAM_TIME_SECONDS } from "@/lib/types";
 import { formatDuration } from "@/lib/scoring";
 
 export default function HomePage() {
+  const [selectedExam, setSelectedExam] = useState<ExamId>("standard");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState<"start" | "restore" | null>(null);
@@ -20,13 +22,14 @@ export default function HomePage() {
     if (stored) setEmail(stored);
   }, []);
 
+  const exam = EXAMS[selectedExam];
   const canSubmit = name.trim() && isValidEmail(email);
 
   const startExam = async () => {
     if (!canSubmit) return;
     setError("");
     setLoading("start");
-    await initNewExam(name.trim(), email);
+    await initNewExam(selectedExam, name.trim(), email);
     window.location.href = "/exam";
   };
 
@@ -37,10 +40,10 @@ export default function HomePage() {
     }
     setError("");
     setLoading("restore");
-    const session = await restoreByEmail(email);
+    const session = await restoreByEmail(selectedExam, email);
     if (!session) {
       setLoading(null);
-      setError("No exam in progress for this email.");
+      setError(`No ${exam.title} in progress for this email.`);
       return;
     }
     window.location.href = "/exam";
@@ -48,11 +51,40 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto max-w-md px-4 py-16">
-        <h1 className="text-2xl font-semibold">Math Mock Exam</h1>
+      <div className="mx-auto max-w-lg px-4 py-16">
+        <h1 className="text-2xl font-semibold">Math Mock Exams</h1>
         <p className="mt-2 text-sm text-slate-400">
-          {EXAM_ITEM_COUNT} items · {formatDuration(EXAM_TIME_SECONDS)}
+          {EXAM_ITEM_COUNT} items · {formatDuration(EXAM_TIME_SECONDS)} each
         </p>
+
+        <div className="mt-8 space-y-3">
+          {(Object.keys(EXAMS) as ExamId[]).map((id) => {
+            const def = EXAMS[id];
+            const active = selectedExam === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSelectedExam(id)}
+                className={`w-full rounded-xl border p-4 text-left transition ${
+                  active
+                    ? "border-blue-500 bg-blue-500/10 ring-1 ring-blue-500/40"
+                    : "border-slate-700 bg-slate-900/60 hover:border-slate-500"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{def.title}</p>
+                    <p className="text-sm text-slate-400">{def.subtitle}</p>
+                  </div>
+                  {active && <span className="text-xs text-blue-400">Selected</span>}
+                </div>
+                <p className="mt-2 text-xs text-slate-500">{def.description}</p>
+                <p className="mt-2 text-xs text-slate-600">{def.topics.join(" · ")}</p>
+              </button>
+            );
+          })}
+        </div>
 
         <div className="mt-8 space-y-4">
           <div>

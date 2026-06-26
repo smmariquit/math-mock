@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { isSupabaseConfigured, loadAllAttempts } from "@/lib/supabase/client";
 import { EXAM_ITEM_COUNT, type AttemptSummary, type ExamSession } from "@/lib/types";
+import { getExamLabel } from "@/lib/exams/registry";
 
 type StatusFilter = "all" | ExamSession["status"];
 
@@ -129,6 +130,7 @@ export function AttemptsView() {
           <table className="w-full min-w-[800px] text-left text-sm">
             <thead className="border-b border-slate-700 bg-slate-900/80 text-slate-400">
               <tr>
+                <th className="px-4 py-3 font-medium">Exam</th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Status</th>
@@ -142,13 +144,13 @@ export function AttemptsView() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
                     Loading…
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
                     No attempts found.
                   </td>
                 </tr>
@@ -158,6 +160,7 @@ export function AttemptsView() {
                     key={attempt.id}
                     className="border-b border-slate-800/80 hover:bg-slate-900/40"
                   >
+                    <td className="px-4 py-3 text-slate-400">{getExamLabel(attempt.examId)}</td>
                     <td className="px-4 py-3 font-medium">{attempt.studentName}</td>
                     <td className="px-4 py-3 text-slate-400">{attempt.email}</td>
                     <td className="px-4 py-3">

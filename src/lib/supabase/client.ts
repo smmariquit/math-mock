@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { AnswersMap, AttemptSummary, ExamSession } from "../types";
+import type { AnswersMap, AttemptSummary, ExamId, ExamSession } from "../types";
+import { DEFAULT_EXAM_ID } from "../exams/registry";
 import { countAnswered } from "../scoring";
 
 let client: SupabaseClient | null = null;
@@ -26,8 +27,13 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(email));
 }
 
+function normalizeExamId(value: string | null | undefined): ExamId {
+  return value === "advanced" ? "advanced" : "standard";
+}
+
 interface DbRow {
   id: string;
+  exam_id?: string | null;
   student_name: string;
   email: string;
   status: ExamSession["status"];
@@ -46,6 +52,7 @@ interface DbRow {
 function rowToSession(row: DbRow): ExamSession {
   return {
     id: row.id,
+    examId: normalizeExamId(row.exam_id),
     studentName: row.student_name,
     email: row.email,
     status: row.status,
@@ -64,6 +71,7 @@ function rowToSession(row: DbRow): ExamSession {
 
 interface DbListRow {
   id: string;
+  exam_id?: string | null;
   student_name: string;
   email: string;
   status: ExamSession["status"];
@@ -77,6 +85,7 @@ interface DbListRow {
 function rowToAttemptSummary(row: DbListRow): AttemptSummary {
   return {
     id: row.id,
+    examId: normalizeExamId(row.exam_id),
     studentName: row.student_name,
     email: row.email,
     status: row.status,
@@ -95,7 +104,7 @@ export async function loadAllAttempts(): Promise<AttemptSummary[]> {
   const { data, error } = await supabase
     .from("exam_sessions")
     .select(
-      "id, student_name, email, status, score, correct_count, answers, started_at, updated_at",
+      "id, exam_id, student_name, email, status, score, correct_count, answers, started_at, updated_at",
     )
     .order("updated_at", { ascending: false });
 
@@ -106,6 +115,7 @@ export async function loadAllAttempts(): Promise<AttemptSummary[]> {
 export async function createSession(
   studentName: string,
   email: string,
+  examId: ExamId,
   seed: number,
   timeLimitSeconds: number,
 ): Promise<ExamSession | null> {
@@ -117,6 +127,7 @@ export async function createSession(
     .insert({
       student_name: studentName,
       email: normalizeEmail(email),
+      exam_id: examId,
       seed,
       time_limit_seconds: timeLimitSeconds,
       time_remaining_seconds: timeLimitSeconds,
@@ -144,7 +155,10 @@ export async function loadSession(id: string): Promise<ExamSession | null> {
   return rowToSession(data as DbRow);
 }
 
-export async function loadActiveSessionByEmail(email: string): Promise<ExamSession | null> {
+export async function loadActiveSessionByEmail(
+  email: string,
+  examId: ExamId = DEFAULT_EXAM_ID,
+): Promise<ExamSession | null> {
   const normalized = normalizeEmail(email);
   const supabase = getSupabase();
 
@@ -153,6 +167,7 @@ export async function loadActiveSessionByEmail(email: string): Promise<ExamSessi
       .from("exam_sessions")
       .select("*")
       .eq("email", normalized)
+      .eq("exam_id", examId)
       .eq("status", "in_progress")
       .order("updated_at", { ascending: false })
       .limit(1)
@@ -162,7 +177,11 @@ export async function loadActiveSessionByEmail(email: string): Promise<ExamSessi
   }
 
   const local = loadLocalBackup();
-  if (local?.email === normalized && local.status === "in_progress") {
+  if (
+    local?.email === normalized &&
+    local.status === "in_progress" &&
+    (local.examId ?? DEFAULT_EXAM_ID) === examId
+  ) {
     return local;
   }
 
@@ -211,6 +230,7 @@ export function loadLocalBackup(): ExamSession | null {
   try {
     const session = JSON.parse(raw) as ExamSession;
     if (!session.email) return null;
+    if (!session.examId) session.examId = DEFAULT_EXAM_ID;
     return session;
   } catch {
     return null;
