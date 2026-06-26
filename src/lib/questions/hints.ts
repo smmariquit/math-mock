@@ -1,14 +1,26 @@
 import type { Question } from "../types";
 
-type QuestionDraft = Omit<Question, "hints">;
+type QuestionDraft = Omit<Question, "hints"> & { hints?: string[] };
 
 function hints(...items: string[]): string[] {
   return items.slice(0, 3);
 }
 
 export function attachHints(q: QuestionDraft): Question {
-  const h = getHints(q);
-  return { ...q, hints: h.length > 0 ? h : hints("Re-read the question and identify what is being asked.", "Write down the relevant formula or rule.", "Check your arithmetic before choosing an answer.") };
+  const provided = q.hints?.filter(Boolean).slice(0, 3) ?? [];
+  const h = provided.length > 0 ? provided : getHints(q);
+  const { hints: _drop, ...rest } = q;
+  return {
+    ...rest,
+    hints:
+      h.length > 0
+        ? h
+        : hints(
+            "Re-read the question and identify what is being asked.",
+            "Write down the relevant formula or rule.",
+            "Check your arithmetic before choosing an answer.",
+          ),
+  };
 }
 
 function getHints(q: QuestionDraft): string[] {
@@ -302,6 +314,14 @@ function getHints(q: QuestionDraft): string[] {
       "Use the diagram to identify known and unknown measures.",
       "Match the shape to the correct formula for this problem.",
       "Substitute values carefully before computing.",
+    );
+  }
+
+  if (visualization === "abstract_pattern") {
+    return hints(
+      "Look for a repeating rule: rotation, count, shape order, or fill pattern.",
+      "Compare each figure to the previous one — what changed?",
+      "Match your chosen rule to the labeled answer shapes A–D.",
     );
   }
 

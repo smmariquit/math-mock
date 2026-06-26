@@ -4,7 +4,8 @@ export type Topic =
   | "geometry"
   | "trigonometry"
   | "statistics"
-  | "functions";
+  | "functions"
+  | "abstract_reasoning";
 
 export type VisualizationType =
   | "none"
@@ -12,7 +13,8 @@ export type VisualizationType =
   | "coordinate"
   | "bar_chart"
   | "circle"
-  | "matter_projectile";
+  | "matter_projectile"
+  | "abstract_pattern";
 
 export type ExamId = "standard" | "advanced";
 
@@ -25,7 +27,7 @@ export interface Question {
   explanation: string;
   hints: string[];
   visualization: VisualizationType;
-  vizData?: Record<string, number | number[] | string | boolean | string[]>;
+  vizData?: Record<string, unknown>;
 }
 
 export type AnswersMap = Record<number, number | null>;
@@ -68,6 +70,7 @@ export const TOPIC_LABELS: Record<Topic, string> = {
   trigonometry: "Trigonometry",
   statistics: "Statistics & Probability",
   functions: "Functions & Sequences",
+  abstract_reasoning: "Abstract Reasoning",
 };
 
 export const EXAM_ITEM_COUNT = 100;

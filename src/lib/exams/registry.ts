@@ -16,7 +16,7 @@ export const EXAMS: Record<ExamId, ExamDefinition> = {
     title: "Mock Exam 1",
     subtitle: "General review",
     description: "100 mixed items across all junior high topics.",
-    topics: ["Number sense", "Algebra", "Geometry", "Trigonometry", "Statistics", "Functions"],
+    topics: ["Number sense", "Algebra", "Geometry", "Trigonometry", "Statistics", "Functions", "Abstract reasoning"],
   },
   advanced: {
     id: "advanced",
@@ -27,10 +27,12 @@ export const EXAMS: Record<ExamId, ExamDefinition> = {
     topics: [
       "Statistics & data",
       "Probability & counting",
-      "Functions & sequences",
-      "Advanced algebra",
-      "Coordinate geometry",
+      "Rational & exponential functions",
+      "Vieta's identities & inequalities",
+      "Linear & quadratic forms",
+      "Circle geometry & similarity",
       "Trigonometry",
+      "Abstract reasoning",
     ],
   },
 };

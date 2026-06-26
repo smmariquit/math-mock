@@ -2,7 +2,7 @@ import type { Question, Topic } from "../types";
 import { attachHints } from "./hints";
 import { createSeededRandom, shuffleWithRng } from "./utils";
 
-export type QuestionDraft = Omit<Question, "hints">;
+export type QuestionDraft = Omit<Question, "hints"> & { hints?: string[] };
 export type Generator = (rng: () => number, id: number) => QuestionDraft;
 
 function questionFingerprint(q: QuestionDraft): string {

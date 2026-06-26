@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import type { Question, VisualizationType } from "@/lib/types";
 import { BarChartViz } from "./BarChartViz";
 import { CoordinateViz } from "./CoordinateViz";
+import { AbstractPatternViz } from "./AbstractPatternViz";
 import type { GeometryKind } from "./GeometryViz";
 import { ProjectileViz } from "./MatterViz";
 
@@ -77,6 +78,15 @@ export function QuestionVisualization({ question }: QuestionVisualizationProps) 
             key={runKey}
             angle={vizData?.angle as number | undefined}
             velocity={vizData?.velocity as number | undefined}
+          />
+        );
+      case "abstract_pattern":
+        return (
+          <AbstractPatternViz
+            kind={vizData?.kind as string | undefined}
+            cells={vizData?.cells as string[] | undefined}
+            matrixCols={vizData?.matrixCols as number | undefined}
+            optionShapes={vizData?.optionShapes as string[] | undefined}
           />
         );
       default:

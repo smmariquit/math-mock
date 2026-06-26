@@ -9,6 +9,7 @@ export function scoreExam(questions: Question[], answers: AnswersMap) {
     trigonometry: { correct: 0, total: 0 },
     statistics: { correct: 0, total: 0 },
     functions: { correct: 0, total: 0 },
+    abstract_reasoning: { correct: 0, total: 0 },
   };
 
   for (const q of questions) {

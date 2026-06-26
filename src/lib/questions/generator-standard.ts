@@ -1,4 +1,6 @@
 import type { Topic } from "../types";
+import { abstractStandardGenerators } from "./abstract-reasoning";
+import { extendedStandardGenerators } from "./generator-extended";
 import {
   buildOptions,
   formatFraction,
@@ -7,7 +9,7 @@ import {
 } from "./utils";
 import type { Generator, QuestionDraft } from "./bank";
 
-export const standardGenerators: { topic: Topic; fn: Generator }[] = [
+const coreStandardGenerators: { topic: Topic; fn: Generator }[] = [
   { topic: "number_sense", fn: genFractionAdd },
   { topic: "number_sense", fn: genPercentOf },
   { topic: "number_sense", fn: genRatioProblem },
@@ -36,6 +38,12 @@ export const standardGenerators: { topic: Topic; fn: Generator }[] = [
   { topic: "functions", fn: genFunctionEvaluate },
   { topic: "functions", fn: genParabolaVertex },
   { topic: "geometry", fn: genProjectileHeight },
+];
+
+export const standardGenerators: { topic: Topic; fn: Generator }[] = [
+  ...coreStandardGenerators,
+  ...extendedStandardGenerators,
+  ...abstractStandardGenerators,
 ];
 
 function genFractionAdd(rng: () => number, id: number): QuestionDraft {

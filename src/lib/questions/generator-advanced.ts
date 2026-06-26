@@ -1,4 +1,6 @@
 import type { Topic } from "../types";
+import { abstractAdvancedGenerators } from "./abstract-reasoning";
+import { extendedAdvancedGenerators } from "./generator-extended";
 import { buildOptions, formatFraction, pickFrom, pickInt } from "./utils";
 import type { Generator, QuestionDraft } from "./bank";
 
@@ -659,4 +661,6 @@ export const advancedGenerators: { topic: Topic; fn: Generator }[] = [
   { topic: "algebra", fn: genQuadraticInequality },
   { topic: "statistics", fn: genProbabilityWithoutReplacement },
   { topic: "functions", fn: genGeometricSeriesSum },
+  ...extendedAdvancedGenerators,
+  ...abstractAdvancedGenerators,
 ];
