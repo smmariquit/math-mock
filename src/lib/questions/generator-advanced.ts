@@ -16,7 +16,7 @@ function formatSignedTerm(value: number, variable = ""): string {
 }
 
 function formatQuadraticPrompt(b: number, c: number): string {
-  const middle = formatSignedTerm(b, "x").replace(/^\+ /, "");
+  const middle = formatSignedTerm(b, "x");
   const constant = formatSignedTerm(c);
   if (middle && constant) return `$x^2 ${middle} ${constant} = 0$`;
   if (middle) return `$x^2 ${middle} = 0$`;
@@ -380,7 +380,7 @@ function genQuadraticInequality(rng: () => number, id: number): QuestionDraft {
   return {
     id,
     topic: "algebra",
-    prompt: `Solve: $x^2 ${formatSignedTerm(b, "x").replace(/^\+ /, "")} ${formatSignedTerm(c)} > 0$`,
+    prompt: `Solve: $x^2 ${formatSignedTerm(b, "x")} ${formatSignedTerm(c)} > 0$`,
     options,
     correctIndex,
     explanation: `Parabola opens up; positive outside the roots $${r1}$ and $${r2}$.`,

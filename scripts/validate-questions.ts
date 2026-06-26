@@ -11,8 +11,9 @@ function verifyQuestion(q: Question): string[] {
 
   const p = q.prompt;
 
-  if (p.includes("Find the roots of")) {
+  if (p.includes("x^2")) {
     if (p.includes("+ -") || p.includes("- -")) errors.push("malformed quadratic constant sign");
+    if (/x\^2\s+[0-9]/.test(p)) errors.push("missing operator after x^2");
   }
 
   if (p.includes("missing leg")) {

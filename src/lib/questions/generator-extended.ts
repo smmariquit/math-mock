@@ -18,7 +18,7 @@ function formatSignedTerm(value: number, variable = ""): string {
 }
 
 function formatQuadraticPrompt(b: number, c: number): string {
-  const middle = formatSignedTerm(b, "x").replace(/^\+ /, "");
+  const middle = formatSignedTerm(b, "x");
   const constant = formatSignedTerm(c);
   if (middle && constant) return `$x^2 ${middle} ${constant} = 0$`;
   if (middle) return `$x^2 ${middle} = 0$`;
