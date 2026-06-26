@@ -7,7 +7,7 @@ const GENERIC_HINTS = [
   "Check your arithmetic before choosing an answer.",
 ];
 
-function verifyQuestion(q: Question): string[] {
+function verifyQuestion(q: Question, examId?: "standard" | "advanced"): string[] {
   const errors: string[] = [];
   const correct = q.options[q.correctIndex];
   if (correct === undefined) errors.push("missing correct option");
@@ -98,6 +98,14 @@ function verifyQuestion(q: Question): string[] {
     }
   }
 
+  if (examId === "advanced" && p.includes("find $\\triangle + \\bigcirc$")) {
+    errors.push("trivial symbol addition in advanced exam");
+  }
+
+  if (examId === "advanced" && p === "How many dots appear in the next figure?") {
+    errors.push("trivial dot-count progression in advanced exam");
+  }
+
   // Visualization answer leaks
   if (q.visualization === "coordinate") {
     const kind = q.vizData?.kind as string | undefined;
@@ -140,7 +148,7 @@ for (const examId of EXAMS) {
     const questions = generateExamQuestions(examId, s * 99991 + 1, 100);
     for (const q of questions) {
       total += 1;
-      const errs = verifyQuestion(q);
+      const errs = verifyQuestion(q, examId);
       if (errs.length) allErrors.push({ exam: examId, seed: s, id: q.id, prompt: q.prompt.slice(0, 100), errs });
     }
   }

@@ -468,8 +468,124 @@ function genSymbolEquation(rng: () => number, id: number): QuestionDraft {
     visualization: "none",
     hints: hintLines(
       `Replace $\\triangle$ with ${a} and $\\bigcirc$ with ${b}.`,
-      `Compute ${a} + ${b} — not ${a} $\\times$ ${b} or ${a} $-$ ${b}.`,
-      `The sum is ${correct}.`,
+      `The $+$ sign means add — not multiply (${a} $\\times$ ${b}) or subtract (${a} $-$ ${b}).`,
+      "Compute the sum and match it to one of the four options.",
+    ),
+  };
+}
+
+function genSymbolEquationAdvanced(rng: () => number, id: number): QuestionDraft {
+  const kind = pickFrom(rng, ["expression", "solve", "system"] as const);
+
+  if (kind === "expression") {
+    const form = pickFrom(rng, ["product_minus", "sum_times", "product_plus"] as const);
+    const a = pickInt(rng, 4, 9);
+    const b = pickInt(rng, 2, 7);
+    const c = pickInt(rng, 2, 6);
+    let prompt: string;
+    let value: number;
+    let itemHints: string[];
+
+    if (form === "product_minus") {
+      value = a * b - c;
+      prompt = `If $\\triangle = ${a}$, $\\bigcirc = ${b}$, and $\\square = ${c}$, find $\\triangle \\times \\bigcirc - \\square$.`;
+      itemHints = hintLines(
+        "Substitute each symbol, then follow order of operations: multiply before subtracting.",
+        `$\\triangle \\times \\bigcirc = ${a} \\times ${b} = ${a * b}$; then subtract $\\square = ${c}$.`,
+        "Do not add the three values — multiplication and subtraction are required.",
+      );
+    } else if (form === "sum_times") {
+      value = (a + b) * c;
+      prompt = `If $\\triangle = ${a}$, $\\bigcirc = ${b}$, and $\\square = ${c}$, find $(\\triangle + \\bigcirc) \\times \\square$.`;
+      itemHints = hintLines(
+        "Parentheses first: compute $\\triangle + \\bigcirc$ before multiplying by $\\square$.",
+        `$\\triangle + \\bigcirc = ${a} + ${b} = ${a + b}$; then multiply by $\\square = ${c}$.`,
+        "Adding all three values or multiplying all three gives a different result.",
+      );
+    } else {
+      value = a * b + c;
+      prompt = `If $\\triangle = ${a}$, $\\bigcirc = ${b}$, and $\\square = ${c}$, find $\\triangle \\times \\bigcirc + \\square$.`;
+      itemHints = hintLines(
+        "Multiply $\\triangle$ and $\\bigcirc$ first, then add $\\square$.",
+        `$\\triangle \\times \\bigcirc = ${a} \\times ${b} = ${a * b}$; then add $\\square = ${c}$.`,
+        "Do not subtract — the expression ends with $+ \\square$.",
+      );
+    }
+
+    const correct = String(value);
+    const { options, correctIndex } = buildOptions(rng, correct, [
+      String(a + b + c),
+      String(a * b * c),
+      String(Math.abs(a * b - c) + pickInt(rng, 1, 3)),
+    ]);
+    return {
+      id,
+      topic: "abstract_reasoning",
+      prompt,
+      options,
+      correctIndex,
+      explanation: `Substitute and evaluate: ${correct}.`,
+      visualization: "none",
+      hints: itemHints,
+    };
+  }
+
+  if (kind === "solve") {
+    const circle = pickInt(rng, 4, 12);
+    const triangle = pickInt(rng, 3, 14);
+    const sum = triangle + circle;
+    const correct = String(triangle);
+    const { options, correctIndex } = buildOptions(rng, correct, [
+      String(circle),
+      String(sum),
+      String(Math.abs(triangle - circle)),
+    ]);
+    return {
+      id,
+      topic: "abstract_reasoning",
+      prompt: `If $\\triangle + \\bigcirc = ${sum}$ and $\\bigcirc = ${circle}$, find $\\triangle$.`,
+      options,
+      correctIndex,
+      explanation: `$\\triangle = ${sum} - ${circle} = ${triangle}$.`,
+      visualization: "none",
+      hints: hintLines(
+        `Treat this like a one-variable equation: $\\triangle + \\bigcirc = ${sum}$.`,
+        `Replace $\\bigcirc$ with ${circle}: $\\triangle + ${circle} = ${sum}$.`,
+        "Isolate $\\triangle$ by subtracting the known value from both sides.",
+      ),
+    };
+  }
+
+  const circle = pickInt(rng, 2, 8);
+  const triangle = pickInt(rng, 5, 14);
+  const sum = triangle + circle;
+  const diff = triangle - circle;
+  const askTriangle = rng() < 0.5;
+  const correct = String(askTriangle ? triangle : circle);
+  const symbol = askTriangle ? "\\triangle" : "\\bigcirc";
+  const { options, correctIndex } = buildOptions(rng, correct, [
+    String(askTriangle ? circle : triangle),
+    String(sum),
+    String(diff),
+  ]);
+  return {
+    id,
+    topic: "abstract_reasoning",
+    prompt: `If $\\triangle + \\bigcirc = ${sum}$ and $\\triangle - \\bigcirc = ${diff}$, find $${symbol}$.`,
+    options,
+    correctIndex,
+    explanation: askTriangle
+      ? `$\\triangle = \\dfrac{(${sum}) + (${diff})}{2} = ${triangle}$.`
+      : `$\\bigcirc = \\dfrac{(${sum}) - (${diff})}{2} = ${circle}$.`,
+    visualization: "none",
+    hints: hintLines(
+      "You have two equations in two unknowns — combine them like a linear system.",
+      askTriangle
+        ? `Add the equations: $2\\triangle = ${sum} + ${diff}$.`
+        : `Subtract the second from the first: $2\\bigcirc = ${sum} - ${diff}$.`,
+      askTriangle
+        ? "Divide by 2 to solve for $\\triangle$."
+        : "Divide by 2 to solve for $\\bigcirc$.",
     ),
   };
 }
@@ -559,15 +675,16 @@ export const abstractStandardGenerators: { topic: Topic; fn: Generator }[] = [
   { topic: "abstract_reasoning", fn: genOddOneOut },
   { topic: "abstract_reasoning", fn: genNumberPattern },
   { topic: "abstract_reasoning", fn: genTriangularDots },
+  { topic: "abstract_reasoning", fn: genSymbolEquation },
+  { topic: "abstract_reasoning", fn: genSizeProgression },
 ];
 
 export const abstractAdvancedGenerators: { topic: Topic; fn: Generator }[] = [
   { topic: "abstract_reasoning", fn: genShapeRotation },
   { topic: "abstract_reasoning", fn: genMatrixPattern },
-  { topic: "abstract_reasoning", fn: genSizeProgression },
-  { topic: "abstract_reasoning", fn: genSymbolEquation },
+  { topic: "abstract_reasoning", fn: genSymbolEquationAdvanced },
   { topic: "abstract_reasoning", fn: genFigureAnalogy },
   { topic: "abstract_reasoning", fn: genAlternatingPattern },
-  { topic: "abstract_reasoning", fn: genTriangularDots },
-  { topic: "abstract_reasoning", fn: genVerbalAnalogy },
+  { topic: "abstract_reasoning", fn: genNumberPattern },
+  { topic: "abstract_reasoning", fn: genOddOneOut },
 ];
