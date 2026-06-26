@@ -1,6 +1,12 @@
 import { generateExamQuestions } from "../src/lib/questions/generator";
 import type { Question } from "../src/lib/types";
 
+const GENERIC_HINTS = [
+  "Re-read the question and identify what is being asked.",
+  "Write down the relevant formula or rule.",
+  "Check your arithmetic before choosing an answer.",
+];
+
 function verifyQuestion(q: Question): string[] {
   const errors: string[] = [];
   const correct = q.options[q.correctIndex];
@@ -8,6 +14,9 @@ function verifyQuestion(q: Question): string[] {
   if (new Set(q.options).size !== q.options.length) errors.push("duplicate options");
   if (!q.hints?.length) errors.push("no hints");
   if (q.hints.length > 3) errors.push("too many hints");
+  if (GENERIC_HINTS.every((line, i) => q.hints[i] === line)) {
+    errors.push("generic fallback hints");
+  }
 
   const p = q.prompt;
 
