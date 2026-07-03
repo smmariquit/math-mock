@@ -79,8 +79,8 @@ export default function HomePage() {
                   </div>
                   {active && <span className="text-xs text-blue-400">Selected</span>}
                 </div>
-                <p className="mt-2 text-xs text-slate-500">{def.description}</p>
-                <p className="mt-2 text-xs text-slate-600">{def.topics.join(" · ")}</p>
+                <p className="mt-2 text-xs text-slate-400">{def.description}</p>
+                <p className="mt-2 text-xs text-slate-400">{def.topics.join(" · ")}</p>
               </button>
             );
           })}
