@@ -29,7 +29,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Supabase
 
-Without Supabase configured, the app still works — progress is saved to localStorage. With Supabase, sessions sync to the cloud so progress survives browser clears (as long as you have the session ID in localStorage, or resume from the same device).
+Without Supabase configured, the app still works: progress is saved to localStorage. With Supabase, sessions sync to the cloud so progress survives browser clears (as long as you have the session ID in localStorage, or resume from the same device).
 
 ## Tech Stack
 
