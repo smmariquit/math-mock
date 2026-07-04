@@ -111,7 +111,7 @@ export default function HomePage() {
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none"
             />
-            <p className="mt-1 text-xs text-slate-500">Used to restore progress on any device.</p>
+            <p className="mt-1 text-xs text-slate-400">Used to restore progress on any device.</p>
           </div>
         </div>
 
