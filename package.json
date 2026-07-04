@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:setup": "node scripts/setup-supabase.mjs",
+    "db:migrate": "node scripts/run-migration.mjs",
     "validate:questions": "npx tsx scripts/validate-questions.ts"
   },
   "dependencies": {
