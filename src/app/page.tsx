@@ -137,7 +137,7 @@ export default function HomePage() {
         </div>
 
         <p className="mt-10 text-center text-xs text-slate-600">
-          <Link href="/attempts" className="hover:text-slate-400">
+          <Link href="/attempts" className="text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline">
             View attempts
           </Link>
         </p>
